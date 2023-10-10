@@ -34,10 +34,10 @@ jobs:
         
     - name: Preparing Files
       run: |
-        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/1sdm450-a02s.zip
+        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/sdm450-a02s_qcom.zip
         git clone https://github.com/SamsungSDM439/Custom-Rom-Builder-For-Samsung-Galaxy-A01-M01
-        unzip 1sdm450-a02s.zip
-        rm -r 1sdm450-a02s.zip
+        unzip sdm450-a02s_qcom.zip
+        rm -r sdm450-a02s_qcom.zip
 
     - name: Downloading your GSI
       run: |
