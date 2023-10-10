@@ -1,0 +1,56 @@
+name: Custom Rom Builder Samsung Galaxy A02s/M02s (qcom)
+
+on:
+  push:
+    branches:
+      - main  # Change this to your desired branch
+  workflow_dispatch:
+    inputs:
+      GSI:
+        description: 'direct link for Gsi image '
+        required: true
+        default: 'https://sourceforge.net/projects/andyyan-gsi/files/lineage-19.x/lineage-19.1-20230715-UNOFFICIAL-arm64_bgN.img.xz'        
+      ARCH:
+        description: 'Arm64 only'
+        required: true
+        default: '64'                
+      NAME:
+        description: 'Rom Name'
+        required: true
+        default: 'LineageOS_19.1_SDM450_A02q_ARM64_Gapps'                
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y zip xz-utils unzip p7zip-full wget
+        
+    - name: Preparing Files
+      run: |
+        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/1sdm450-a02s.zip
+        git clone https://github.com/SamsungSDM439/Custom-Rom-Builder-For-Samsung-Galaxy-A01-M01
+        unzip 1sdm450-a02s.zip
+        rm -r 1sdm450-a02s.zip
+
+    - name: Downloading your GSI
+      run: |
+        wget -P "./temp" ${{ github.event.inputs.GSI }} 
+        chmod 755 *
+        chmod 755 ./bin/*
+
+    - name: Building
+      run: |
+        ./arm${{ github.event.inputs.ARCH }}_git
+        
+    - name: Uploading The Zip
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ github.event.inputs.NAME }}   # Replace with a suitable name
+        path: ./zip/Custom_Rom_SDM450.zip
