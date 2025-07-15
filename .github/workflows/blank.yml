@@ -9,7 +9,7 @@ on:
       GSI:
         description: 'Direct link for GSI image'
         required: true
-        default: 'https://sourceforge.net/projects/andyyan-gsi/files/lineage-19.x/lineage-19.1-20230715-UNOFFICIAL-arm64_bgN.img.xz'        
+        default: 'https://sourceforge.net/projects/mystic-gsi-updates/files/Pixel/Pixel-cheetah-15-12620009-AB-20241112-MysticGSI.zip'        
       ARCH:
         description: 'Arm64 only'
         required: true
@@ -17,7 +17,7 @@ on:
       NAME:
         description: 'Rom Name'
         required: true
-        default: 'LineageOS_19.1_SDM450_A02q_ARM64_Gapps'                
+        default: 'Pixel_15_SDM450_A02q_ARM64_Gapps'                
 
 jobs:
   Build:
@@ -34,10 +34,10 @@ jobs:
         
     - name: Preparing Files
       run: |
-        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/sdm450-a02s_qcom.zip
-        git clone https://github.com/SamsungSDM439/Custom-Rom-Builder-For-Samsung-Galaxy-A01-M01
-        unzip sdm450-a02s_qcom.zip
-        rm -r sdm450-a02s_qcom.zip
+        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/sdm450.zip/download -O sdm450.zip
+        git clone https://github.com/arthurpf-dev/repo
+        unzip sdm450.zip
+        rm -r sdm450.zip
 
     - name: Downloading your GSI
       run: |
