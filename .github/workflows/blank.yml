@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       GSI:
-        description: 'direct link for Gsi image '
+        description: 'Direct link for GSI image'
         required: true
         default: 'https://sourceforge.net/projects/andyyan-gsi/files/lineage-19.x/lineage-19.1-20230715-UNOFFICIAL-arm64_bgN.img.xz'        
       ARCH:
@@ -25,7 +25,7 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
     - name: Install Dependencies
       run: |
@@ -41,7 +41,8 @@ jobs:
 
     - name: Downloading your GSI
       run: |
-        wget -P "./temp" ${{ github.event.inputs.GSI }} 
+        mkdir -p ./temp
+        wget -P "./temp" "${{ github.event.inputs.GSI }}"
         chmod 755 *
         chmod 755 ./bin/*
 
@@ -50,7 +51,8 @@ jobs:
         ./arm${{ github.event.inputs.ARCH }}_git
         
     - name: Uploading The Zip
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
-        name: ${{ github.event.inputs.NAME }}   # Replace with a suitable name
+        name: ${{ github.event.inputs.NAME }}
         path: ./zip/Custom_Rom_SDM450.zip
+        retention-days: 7
