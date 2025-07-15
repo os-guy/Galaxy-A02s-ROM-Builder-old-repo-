@@ -17,7 +17,15 @@ on:
       NAME:
         description: 'Rom Name'
         required: true
-        default: 'Pixel_15_SDM450_A02q_ARM64_Gapps'                
+        default: 'Pixel_15_SDM450_A02q_ARM64_Gapps'
+      CREATE_RELEASE:
+        description: 'Create GitHub Release'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
 
 jobs:
   Build:
@@ -47,12 +55,42 @@ jobs:
         chmod 755 ./bin/*
 
     - name: Building
+      id: build
       run: |
         ./arm${{ github.event.inputs.ARCH }}_git
+        # Find the output file(s) created by the build script
+        OUTPUT_FILES=$(find . -type f -name "*.zip" -newer "$(date -r ./arm${{ github.event.inputs.ARCH }}_git '+%Y%m%d%H%M.%S')" | grep -v "sdm450.zip" || true)
+        if [ -z "$OUTPUT_FILES" ]; then
+          # If no new zip files found, look in the expected output directory
+          OUTPUT_FILES=$(find ./zip -type f -name "*.zip" | head -n 1)
+        fi
+        echo "OUTPUT_FILES=$OUTPUT_FILES" >> $GITHUB_OUTPUT
         
-    - name: Uploading The Zip
+        # Get the filename for display
+        if [ -n "$OUTPUT_FILES" ]; then
+          FILENAME=$(basename "$OUTPUT_FILES")
+          echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
+          echo "Found output file: $FILENAME"
+        else
+          echo "No output file found"
+          exit 1
+        fi
+        
+    - name: Uploading The Output File
       uses: actions/upload-artifact@v4
       with:
         name: ${{ github.event.inputs.NAME }}
-        path: ./zip/Custom_Rom_SDM450.zip
+        path: ${{ steps.build.outputs.OUTPUT_FILES }}
         retention-days: 7
+        
+    - name: Create GitHub Release
+      if: ${{ github.event.inputs.CREATE_RELEASE == 'true' }}
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ${{ github.event.inputs.NAME }} - ${{ steps.build.outputs.FILENAME }}
+        tag_name: ${{ github.event.inputs.NAME }}-v${{ github.run_number }}
+        files: ${{ steps.build.outputs.OUTPUT_FILES }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
