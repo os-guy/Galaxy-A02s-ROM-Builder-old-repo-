@@ -11,9 +11,13 @@ on:
         required: true
         default: 'https://sourceforge.net/projects/mystic-gsi-updates/files/Pixel/Pixel-cheetah-15-12620009-AB-20241112-MysticGSI.zip'        
       ARCH:
-        description: 'Arm64 only'
+        description: 'Architecture (32 or 64)'
         required: true
-        default: '64'                
+        default: '64'
+        type: choice
+        options:
+          - '32'
+          - '64'
       NAME:
         description: 'Rom Name'
         required: true
@@ -57,13 +61,31 @@ jobs:
     - name: Building
       id: build
       run: |
+        # Record the current time before building
+        START_TIME=$(date +%s)
+        
+        # Run the build script
         ./arm${{ github.event.inputs.ARCH }}_git
-        # Find the output file(s) created by the build script
-        OUTPUT_FILES=$(find . -type f -name "*.zip" -newer "$(date -r ./arm${{ github.event.inputs.ARCH }}_git '+%Y%m%d%H%M.%S')" | grep -v "sdm450.zip" || true)
-        if [ -z "$OUTPUT_FILES" ]; then
-          # If no new zip files found, look in the expected output directory
-          OUTPUT_FILES=$(find ./zip -type f -name "*.zip" | head -n 1)
+        
+        # Wait a moment to ensure file operations complete
+        sleep 5
+        
+        # Find zip files created after we started the build
+        echo "Looking for output files..."
+        OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" || true)
+        
+        # If multiple files found, use the newest one
+        if [ "$(echo "$OUTPUT_FILES" | wc -l)" -gt 1 ]; then
+          echo "Multiple zip files found, using the newest one"
+          OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" | xargs ls -t | head -n 1)
         fi
+        
+        # If still no files found, look specifically in the zip directory
+        if [ -z "$OUTPUT_FILES" ]; then
+          echo "No zip files found in general search, looking in ./zip directory"
+          OUTPUT_FILES=$(find ./zip -type f -name "*.zip" 2>/dev/null | head -n 1 || true)
+        fi
+        
         echo "OUTPUT_FILES=$OUTPUT_FILES" >> $GITHUB_OUTPUT
         
         # Get the filename for display
@@ -73,6 +95,8 @@ jobs:
           echo "Found output file: $FILENAME"
         else
           echo "No output file found"
+          echo "Listing all zip files in workspace:"
+          find . -name "*.zip" -type f
           exit 1
         fi
         
