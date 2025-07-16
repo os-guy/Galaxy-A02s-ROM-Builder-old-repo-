@@ -1,4 +1,4 @@
-name: Custom Rom Builder Samsung Galaxy A02s/M02s (qcom)
+name: build-test2
 
 on:
   push:
@@ -13,7 +13,7 @@ on:
       ARCH:
         description: 'Architecture (32 or 64)'
         required: true
-        default: '64'
+        default: '32'
         type: choice
         options:
           - '32'
@@ -21,7 +21,7 @@ on:
       NAME:
         description: 'Rom Name'
         required: true
-        default: 'Pixel_15_SDM450_A02q_ARM64_Gapps'
+        default: 'Pixel_15_A11_M11_ARM32_Gapps'
       CREATE_RELEASE:
         description: 'Create GitHub Release'
         required: true
@@ -46,10 +46,10 @@ jobs:
         
     - name: Preparing Files
       run: |
-        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/sdm450.zip/download -O sdm450.zip
-        git clone https://github.com/arthurpf-dev/repo
-        unzip sdm450.zip
-        rm -r sdm450.zip
+        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/a11q.zip -O a11q.zip
+        git clone https://github.com/smiley9000/Custom-Rom-Builder-For-Samsung-Galaxy-A11-M11
+        unzip a11q.zip
+        rm -r a11q.zip
 
     - name: Downloading your GSI
       run: |
@@ -72,12 +72,12 @@ jobs:
         
         # Find zip files created after we started the build
         echo "Looking for output files..."
-        OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" || true)
+        OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "a11q.zip" || true)
         
         # If multiple files found, use the newest one
         if [ "$(echo "$OUTPUT_FILES" | wc -l)" -gt 1 ]; then
           echo "Multiple zip files found, using the newest one"
-          OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" | xargs ls -t | head -n 1)
+          OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "a11q.zip" | xargs ls -t | head -n 1)
         fi
         
         # If still no files found, look specifically in the zip directory

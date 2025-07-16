@@ -1,0 +1,120 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main  # Change this to your desired branch
+  workflow_dispatch:
+    inputs:
+      GSI:
+        description: 'Direct link for GSI image'
+        required: true
+        default: 'https://sourceforge.net/projects/mystic-gsi-updates/files/Pixel/Pixel-cheetah-15-12620009-AB-20241112-MysticGSI.zip'        
+      ARCH:
+        description: 'Architecture (32 or 64)'
+        required: true
+        default: '64'
+        type: choice
+        options:
+          - '32'
+          - '64'
+      NAME:
+        description: 'Rom Name'
+        required: true
+        default: 'Pixel_15_SDM450_A02q_ARM64_Gapps'
+      CREATE_RELEASE:
+        description: 'Create GitHub Release'
+        required: true
+        default: 'false'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Install Dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y zip xz-utils unzip p7zip-full wget
+        
+    - name: Preparing Files
+      run: |
+        wget https://sourceforge.net/projects/samsung-galaxy-a01-m01/files/sdm450.zip/download -O sdm450.zip
+        git clone https://github.com/arthurpf-dev/repo
+        unzip sdm450.zip
+        rm -r sdm450.zip
+
+    - name: Downloading your GSI
+      run: |
+        mkdir -p ./temp
+        wget -P "./temp" "${{ github.event.inputs.GSI }}"
+        chmod 755 *
+        chmod 755 ./bin/*
+
+    - name: Building
+      id: build
+      run: |
+        # Record the current time before building
+        START_TIME=$(date +%s)
+        
+        # Run the build script
+        ./arm${{ github.event.inputs.ARCH }}_git
+        
+        # Wait a moment to ensure file operations complete
+        sleep 5
+        
+        # Find zip files created after we started the build
+        echo "Looking for output files..."
+        OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" || true)
+        
+        # If multiple files found, use the newest one
+        if [ "$(echo "$OUTPUT_FILES" | wc -l)" -gt 1 ]; then
+          echo "Multiple zip files found, using the newest one"
+          OUTPUT_FILES=$(find . -type f -name "*.zip" -not -path "*/\.*" | grep -v "sdm450.zip" | xargs ls -t | head -n 1)
+        fi
+        
+        # If still no files found, look specifically in the zip directory
+        if [ -z "$OUTPUT_FILES" ]; then
+          echo "No zip files found in general search, looking in ./zip directory"
+          OUTPUT_FILES=$(find ./zip -type f -name "*.zip" 2>/dev/null | head -n 1 || true)
+        fi
+        
+        echo "OUTPUT_FILES=$OUTPUT_FILES" >> $GITHUB_OUTPUT
+        
+        # Get the filename for display
+        if [ -n "$OUTPUT_FILES" ]; then
+          FILENAME=$(basename "$OUTPUT_FILES")
+          echo "FILENAME=$FILENAME" >> $GITHUB_OUTPUT
+          echo "Found output file: $FILENAME"
+        else
+          echo "No output file found"
+          echo "Listing all zip files in workspace:"
+          find . -name "*.zip" -type f
+          exit 1
+        fi
+        
+    - name: Uploading The Output File
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ github.event.inputs.NAME }}
+        path: ${{ steps.build.outputs.OUTPUT_FILES }}
+        retention-days: 7
+        
+    - name: Create GitHub Release
+      if: ${{ github.event.inputs.CREATE_RELEASE == 'true' }}
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        name: ${{ github.event.inputs.NAME }} - ${{ steps.build.outputs.FILENAME }}
+        tag_name: ${{ github.event.inputs.NAME }}-v${{ github.run_number }}
+        files: ${{ steps.build.outputs.OUTPUT_FILES }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
